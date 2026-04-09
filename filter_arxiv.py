@@ -18,8 +18,6 @@ import requests
 # Configuration
 # ---------------------------------------------------------------------------
 
-FEED_SELF_URL = "https://henry-ald.github.io/arxiv-filter/feed.xml"
-
 FEEDS_FULL = [
     "https://arxiv.org/rss/astro-ph.CO",
     "https://arxiv.org/rss/astro-ph.IM",
@@ -41,7 +39,7 @@ FEEDS_PREFILTERED = [
 ]
 
 try:
-    from config import RESEARCH_INTERESTS, PREFILTER_KEYWORDS
+    from config import RESEARCH_INTERESTS, PREFILTER_KEYWORDS, FEED_SELF_URL
 except ImportError:
     raise ImportError(
         "config.py not found. Copy config.example.py to config.py and "
