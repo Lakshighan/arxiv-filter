@@ -48,6 +48,8 @@ Open `config.py` and fill in:
 - **`RESEARCH_INTERESTS`** — a few sentences or paragraphs describing your research. Be specific: concrete topics, methods, and adjacent areas work much better than broad fields. The more focused this is, the better Claude's relevance scoring.
 - **`PREFILTER_KEYWORDS`** — case-insensitive substrings used to narrow high-volume feeds before sending to Claude. Prefer specific phrases ("nested sampling") over broad terms ("sampling"), which will let through hundreds of irrelevant papers.
 - **`FEED_SELF_URL`** — update to match your Pages URL (see step 4 below).
+- **`FEEDS_FULL`** - arxiv RSS feeds to process with Claude in full.
+- **`FEEDS_PREFILTERED`** arxiv RSS feeds to filter with keywords before processing with Claude.
 
 If you forked as private, simply commit `config.py`:
 
