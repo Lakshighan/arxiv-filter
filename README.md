@@ -48,8 +48,8 @@ Open `config.py` and fill in:
 - **`RESEARCH_INTERESTS`** — a few sentences or paragraphs describing your research. Be specific: concrete topics, methods, and adjacent areas work much better than broad fields. The more focused this is, the better Claude's relevance scoring.
 - **`PREFILTER_KEYWORDS`** — case-insensitive substrings used to narrow high-volume feeds before sending to Claude. Prefer specific phrases ("nested sampling") over broad terms ("sampling"), which will let through hundreds of irrelevant papers.
 - **`FEED_SELF_URL`** — update to match your Pages URL (see step 4 below).
-- **`FEEDS_FULL`** - arxiv RSS feeds to process with Claude in full.
-- **`FEEDS_PREFILTERED`** arxiv RSS feeds to filter with keywords before processing with Claude.
+- **`FEEDS_FULL`** - arXiv feeds to process in full (use for lower-volume categories like `astro-ph.CO`, `stat.ML`).
+- **`FEEDS_PREFILTERED`** arXiv feeds to narrow with keywords before sending to Claude (use for high-volume categories like `cs.LG`)
 
 If you forked as private, simply commit `config.py`:
 
@@ -115,8 +115,6 @@ Most of what you'll want to tweak lives in `config.py` (`RESEARCH_INTERESTS`, `P
 
 Other configuration lives at the top of `filter_arxiv.py`:
 
-- **`FEEDS_FULL`** — arXiv feeds to process in full (use for lower-volume categories like `astro-ph.CO`, `stat.ML`).
-- **`FEEDS_PREFILTERED`** — arXiv feeds to narrow with keywords before sending to Claude (use for high-volume categories like `cs.LG`).
 - **`MIN_SCORE`** — minimum relevance score (1–5) for a paper to be included. Raise for stricter filtering.
 - **`BATCH_SIZE`** — number of papers sent to Claude per API call. Larger batches are cheaper but risk hitting output limits.
 - **`MODEL`** — which Claude model to use. Defaults to Haiku 4.5, which is well-suited to this task.
