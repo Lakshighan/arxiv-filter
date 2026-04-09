@@ -18,24 +18,8 @@ import requests
 # Configuration
 # ---------------------------------------------------------------------------
 
-FEEDS_FULL = [
-    "https://arxiv.org/rss/astro-ph.CO",
-    "https://arxiv.org/rss/astro-ph.IM",
-    "https://arxiv.org/rss/stat.ML",
-    "https://arxiv.org/rss/stat.CO",
-    "https://arxiv.org/rss/stat.ME",
-]
-
-FEEDS_PREFILTERED = [
-    "https://arxiv.org/rss/cs.LG",
-    "https://arxiv.org/rss/astro-ph.GA",
-    "https://arxiv.org/rss/eess.IV",
-    "https://arxiv.org/rss/eess.SP",
-    "https://arxiv.org/rss/math.ST",
-]
-
 try:
-    from config import RESEARCH_INTERESTS, PREFILTER_KEYWORDS, FEED_SELF_URL
+    from config import RESEARCH_INTERESTS, PREFILTER_KEYWORDS, FEED_SELF_URL, FEEDS_FULL, FEEDS_PREFILTERED
 except ImportError:
     raise ImportError(
         "config.py not found. Copy config.example.py to config.py and "
