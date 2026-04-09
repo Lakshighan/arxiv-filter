@@ -1,0 +1,47 @@
+name: Filter arXiv RSS
+
+on:
+  schedule:
+    - cron: '0 8 * * *'
+    - cron: '0 20 * * *'
+  workflow_dispatch:
+
+jobs:
+  filter:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: pip install feedparser anthropic requests
+
+      - name: Verify config.py exists
+        run: |
+          if [ ! -f config.py ]; then
+            echo "ERROR: config.py not found. Either commit one or set CONFIG_PY secret."
+            exit 1
+          fi
+
+      - name: Run arXiv filter
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          READWISE_TOKEN: ${{ secrets.READWISE_TOKEN }}
+        run: python filter_arxiv.py
+
+      - name: Commit and push updated feed
+        run: |
+          git config --global user.email "arxiv-filter-bot@users.noreply.github.com"
+          git config --global user.name "arXiv Filter Bot"
+          git add docs/feed.xml seen_ids.json recent_papers.json pushed_to_reader.json
+          git diff --staged --quiet || git commit -m "Update filtered feed $(date -u '+%Y-%m-%d')"
+          git push
