@@ -32,10 +32,6 @@ FEEDS_PREFILTERED = [
     "https://arxiv.org/rss/eess.IV",
     "https://arxiv.org/rss/eess.SP",
     "https://arxiv.org/rss/math.ST",
-    # Binary analysis / reverse engineering
-    "https://arxiv.org/rss/cs.CR",
-    "https://arxiv.org/rss/cs.SE",
-    "https://arxiv.org/rss/cs.PL",
 ]
 
 try:
