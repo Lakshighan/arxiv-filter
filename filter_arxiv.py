@@ -59,7 +59,24 @@ def prefilter(title: str, abstract: str) -> bool:
 
 
 def truncate(text: str, limit: int = ABSTRACT_CHAR_LIMIT) -> str:
-    return text if len(text) <= limit else text[:limit].rsplit(" ", 1)[0] + "..."
+    """
+    Safely truncate text without breaking words or leaving awkward punctuation.
+    Handles edge cases like no spaces, unicode, and very short limits.
+    """
+    if len(text) <= limit:
+        return text
+
+    # Cut at limit
+    cut = text[:limit]
+
+    # If there is at least one space, backtrack to the last whole word
+    if " " in cut:
+        cut = cut.rsplit(" ", 1)[0]
+
+    # If no spaces (e.g., long token), just hard‑cut
+    cut = cut.rstrip(" ,.;:-")  # clean trailing punctuation
+
+    return cut + "..."
 
 
 def strip_json_fences(text: str) -> str:
@@ -118,24 +135,55 @@ def save_recent_papers(papers: list[dict]) -> None:
         json.dump(serializable, f, indent=2, sort_keys=True)
 
 def load_pushed() -> dict:
-    """Load the set of papers successfully pushed to Reader: {link: iso_date}."""
+    """
+    Load the set of papers successfully pushed to Reader: {link: iso_date}.
+    Returns an empty dict if the file is missing or corrupted.
+    """
     if not os.path.exists(PUSHED_FILE):
         return {}
+
     try:
         with open(PUSHED_FILE, "r", encoding="utf-8") as f:
-            return json.load(f)
+            data = json.load(f)
+
+        # Validate: ensure values are ISO date strings
+        valid = {}
+        for link, ds in data.items():
+            try:
+                datetime.fromisoformat(ds)
+                valid[link] = ds
+            except ValueError:
+                # Skip corrupted entries
+                continue
+
+        return valid
+
     except (json.JSONDecodeError, OSError):
         return {}
 
 
 def save_pushed(pushed: dict) -> None:
-    cutoff = datetime.now(timezone.utc).timestamp() - PUSHED_MAX_AGE_DAYS * 86400
-    pruned = {
-        link: ds for link, ds in pushed.items()
-        if datetime.fromisoformat(ds).timestamp() >= cutoff
-    }
-    with open(PUSHED_FILE, "w", encoding="utf-8") as f:
+    """
+    Save pushed-paper metadata, pruning entries older than PUSHED_MAX_AGE_DAYS.
+    Writes atomically to avoid corruption.
+    """
+    cutoff_ts = datetime.now(timezone.utc).timestamp() - PUSHED_MAX_AGE_DAYS * 86400
+
+    pruned = {}
+    for link, ds in pushed.items():
+        try:
+            ts = datetime.fromisoformat(ds).timestamp()
+            if ts >= cutoff_ts:
+                pruned[link] = ds
+        except ValueError:
+            # Skip invalid dates
+            continue
+
+    # Atomic write: write to temp file then replace
+    tmp_file = PUSHED_FILE + ".tmp"
+    with open(tmp_file, "w", encoding="utf-8") as f:
         json.dump(pruned, f, indent=2, sort_keys=True)
+    os.replace(tmp_file, PUSHED_FILE)
 
 
 def assess_batch_with_retry(
@@ -328,23 +376,31 @@ def main():
     print(f"\n{len(unique_papers)} new papers to assess "
           f"({len(all_papers) - len(unique_papers)} skipped as duplicates/seen).")
 
-    relevant_papers = []
-    for start in range(0, len(unique_papers), BATCH_SIZE):
-        batch = unique_papers[start:start + BATCH_SIZE]
-        print(f"  assessing batch {start // BATCH_SIZE + 1} "
-              f"({len(batch)} papers)")
-        scores = assess_batch_with_retry(client, batch)
+relevant_papers = []
 
-        for i, paper in enumerate(batch):
-            score = scores.get(i, 0)
-            # Mark as seen regardless of score, so we don't re-assess tomorrow
-            seen_ids[paper["link"]] = now_iso
-            if score >= MIN_SCORE:
-                paper["score"] = score
-                relevant_papers.append(paper)
-                print(f"    ✓ [{score}/5] {paper['title'][:70]}")
-            else:
-                print(f"    ✗ [{score}/5] {paper['title'][:70]}")
+for start in range(0, len(unique_papers), BATCH_SIZE):
+    batch = unique_papers[start:start + BATCH_SIZE]
+    batch_num = (start // BATCH_SIZE) + 1
+
+    print(f"  assessing batch {batch_num} ({len(batch)} papers)")
+    scores = assess_batch_with_retry(client, batch)
+
+    for i, paper in enumerate(batch):
+        score = scores.get(i)
+        if score is None:
+            print(f"    ! missing score for index {i}, defaulting to 0")
+            score = 0
+
+        # mark as seen
+        seen_ids[paper["link"]] = now_iso
+
+        if score >= MIN_SCORE:
+            paper_with_score = {**paper, "score": score}
+            relevant_papers.append(paper_with_score)
+            print(f"    ✓ [{score}/5] {paper['title'][:70]}")
+        else:
+            print(f"    ✗ [{score}/5] {paper['title'][:70]}")
+
 
         # Persist incrementally so a mid-run crash doesn't lose progress
         save_seen_ids(seen_ids)
